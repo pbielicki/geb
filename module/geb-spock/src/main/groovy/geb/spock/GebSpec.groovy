@@ -26,34 +26,35 @@ class GebSpec extends Specification {
     String gebConfEnv = null
     String gebConfScript = null
 
-    @SuppressWarnings("PropertyName")
     @Shared
-    Browser _browser
+    GebTestManager testManager
+
+    def setupSpec() {
+        testManager = GebTestManager.builder()
+                .configurationEnvironmentNameSupplier(this.&getGebConfEnv)
+                .configurationScriptResourcePathSupplier(this.&getGebConfScript)
+                .configurationSupplier(this.&createConf)
+                .browserSupplier(this.&createBrowser)
+                .build()
+    }
 
     Configuration createConf() {
-        new ConfigurationLoader(gebConfEnv, System.properties, new GroovyClassLoader(getClass().classLoader)).getConf(gebConfScript)
+        def environment = testManager.configurationEnvironmentName
+        def scriptPath = testManager.configurationScriptResourcePath
+        def classLoader = new GroovyClassLoader(getClass().classLoader)
+        new ConfigurationLoader(environment, System.properties, classLoader).getConf(scriptPath)
     }
 
     Browser createBrowser() {
-        new Browser(createConf())
+        new Browser(testManager.configuration)
     }
 
     Browser getBrowser() {
-        if (_browser == null) {
-            _browser = createBrowser()
-        }
-        _browser
+        testManager.browser
     }
 
     void resetBrowser() {
-        def config = _browser?.config
-        if (config?.autoClearCookies) {
-            _browser.clearCookiesQuietly()
-        }
-        if (config?.autoClearWebStorage) {
-            _browser.clearWebStorage()
-        }
-        _browser = null
+        testManager.resetBrowser()
     }
 
     def methodMissing(String name, args) {

@@ -21,7 +21,7 @@ import spock.lang.Shared
 
 class GebReportingSpec extends GebSpec {
 
-    // Ridiculous name to avoid name clashes
+        // Ridiculous name to avoid name clashes
     @Rule
     TestName gebReportingSpecTestName
     private int gebReportingPerTestCounter = 1
@@ -29,6 +29,14 @@ class GebReportingSpec extends GebSpec {
     private int gebReportingSpecTestCounter = 1
 
     def setupSpec() {
+        testManager = GebTestManager.builder()
+                .configurationEnvironmentNameSupplier(this.&getGebConfEnv)
+                .configurationScriptResourcePathSupplier(this.&getGebConfScript)
+                .configurationSupplier(this.&createConf)
+                .browserSupplier(this.&createBrowser)
+                .reportLabelCreator(this.&createReportLabel)
+                .build()
+
         reportGroup getClass()
         cleanReportGroupDir()
     }
@@ -38,25 +46,20 @@ class GebReportingSpec extends GebSpec {
     }
 
     def cleanup() {
-        if (_browser && !browser.config.reportOnTestFailureOnly) {
-            report "end"
-        }
+        testManager.reportEnd()
 
         ++gebReportingSpecTestCounter
     }
 
     void reportFailure() {
-        if (_browser) {
-            report "failure"
-        }
+        testManager.reportFailure()
     }
 
     void report(String label = "") {
-        browser.report(createReportLabel(label))
+        testManager.report(label)
     }
 
     String createReportLabel(String label = "") {
         ReporterSupport.toTestReportLabel(gebReportingSpecTestCounter, gebReportingPerTestCounter++, gebReportingSpecTestName?.methodName ?: 'fixture', label)
     }
-
 }
